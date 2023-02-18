@@ -1,0 +1,3 @@
+[submodule "esp-google-iot"]
+	path = esp-google-iot
+	url = E:\\Trisakti\\Skripsi\\project\\ir-blaster\\components\\esp-google-iot
