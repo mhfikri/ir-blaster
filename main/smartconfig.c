@@ -75,7 +75,7 @@ static void smartconfig_task(void *arg)
 
 esp_err_t smartconfig_init(context_t *context)
 {
-    ARG_CHECK(context == NULL, ERR_PARAM_NULL);
+    ARG_CHECK(context != NULL, ERR_PARAM_NULL);
 
     xTaskCreatePinnedToCore(smartconfig_task, "smartconfig", 4096, context, 3, NULL, tskNO_AFFINITY);
     return ESP_OK;

@@ -1234,10 +1234,10 @@ CONFIG_WPA_MBEDTLS_CRYPTO=y
 #
 # Google IoT Core Configuration
 #
-CONFIG_GIOT_PROJECT_ID="project_id"
-CONFIG_GIOT_LOCATION="us-central1"
-CONFIG_GIOT_REGISTRY_ID="registry_id"
-CONFIG_GIOT_DEVICE_ID="device_id"
+CONFIG_GIOT_PROJECT_ID="ir-blaster-376915"
+CONFIG_GIOT_LOCATION="asia-east1"
+CONFIG_GIOT_REGISTRY_ID="irblaster"
+CONFIG_GIOT_DEVICE_ID="IRB01"
 # CONFIG_GIOT_DEBUG_OUTPUT is not set
 # end of Google IoT Core Configuration
 # end of Component config
