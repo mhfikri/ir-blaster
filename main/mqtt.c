@@ -15,6 +15,7 @@
 #include "context.h"
 #include "error.h"
 #include "mqtt.h"
+#include "ota.h"
 
 #define DEVICE_PATH "projects/%s/locations/%s/registries/%s/devices/%s"
 #define SUBSCRIBE_TOPIC_WILDCARD_COMMAND "/devices/%s/commands/#"
@@ -40,6 +41,8 @@ static char *publish_topic_state;
 static char jwt[IOTC_JWT_SIZE] = {0};
 static const uint32_t jwt_expiration_sec = 3600 * 24; // 24 hours.
 extern const uint8_t EC_PV_KEY_START[] asm("_binary_ec_private_pem_start");
+
+static const char *app_version;
 
 static const iotc_crypto_key_data_t PRIVATE_KEY_DATA = {
     .crypto_key_signature_algorithm = IOTC_CRYPTO_KEY_SIGNATURE_ALGORITHM_ES256,
@@ -123,7 +126,7 @@ static void mqtt_publish_telemetry_event(iotc_context_handle_t context_handle, i
     ARG_UNUSED(timed_task);
     ARG_UNUSED(user_data);
 
-    ESP_LOGI(TAG, "Publishing telemetry event...");
+    ESP_LOGI(TAG, "{\"app_version\":\"%s\"}", app_version);
 }
 
 static void mqtt_connection_state_changed(iotc_context_handle_t in_context_handle, void *data, iotc_state_t state)
@@ -273,6 +276,7 @@ esp_err_t mqtt_init(context_t *ctx)
     ARG_CHECK(ctx != NULL, ERR_PARAM_NULL);
 
     context = ctx;
+    app_version = ota_get_app_version();
     mqtt_dispatch_connected(false);
 
     asprintf(&subscribe_topic_wildcard_command, SUBSCRIBE_TOPIC_WILDCARD_COMMAND, CONFIG_GIOT_DEVICE_ID);
