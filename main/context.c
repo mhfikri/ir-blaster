@@ -54,7 +54,7 @@ esp_err_t context_set_temp_humidity(context_t *context, float temp, float humidi
     EventBits_t bitsToSet = 0U;
     context_lock(context);
     context_set(context->sensors.temp, temp, CONTEXT_EVENT_TEMPERATURE);
-    context_set(context->sensors.temp, temp, CONTEXT_EVENT_HUMIDITY);
+    context_set(context->sensors.humidity, humidity, CONTEXT_EVENT_HUMIDITY);
     context_unlock(context);
 
     if (bitsToSet) xEventGroupSetBits(context->event_group, bitsToSet);
