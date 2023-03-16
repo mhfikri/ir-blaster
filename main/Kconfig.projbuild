@@ -1,0 +1,7 @@
+menu "Project config"
+    config DHT22_DATA_GPIO
+        int "DHT22 data GPIO number"
+        default 17
+        help
+            GPIO number for DHT22 data pin.
+endmenu
