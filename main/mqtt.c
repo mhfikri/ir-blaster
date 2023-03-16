@@ -126,7 +126,10 @@ static void mqtt_publish_telemetry_event(iotc_context_handle_t context_handle, i
     ARG_UNUSED(timed_task);
     ARG_UNUSED(user_data);
 
-    ESP_LOGI(TAG, "{\"app_version\":\"%s\"}", app_version);
+    ESP_LOGI(TAG, "{\"app_version\":\"%s\",\"temperature\":\"%.1fC\",\"humidity\":\"%.1f%%\"}",
+             app_version,
+             context->sensors.temp,
+             context->sensors.humidity);
 }
 
 static void mqtt_connection_state_changed(iotc_context_handle_t in_context_handle, void *data, iotc_state_t state)
