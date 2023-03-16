@@ -25,6 +25,8 @@
 #define PUBLISH_TOPIC_STATE "/devices/%s/state"
 #define TASK_REPEAT_FOREVER 1
 
+#define EVENT_DATA "{\"app_version\":\"%s\",\"temperature\":\"%.1fC\",\"humidity\":\"%.1f%%\"}"
+
 static const char *TAG = "mqtt";
 
 static context_t *context;
@@ -122,14 +124,15 @@ static void mqtt_subscribe_callback(iotc_context_handle_t in_context_handle, iot
 static void mqtt_publish_telemetry_event(iotc_context_handle_t context_handle, iotc_timed_task_handle_t timed_task,
                                          void *user_data)
 {
-    ARG_UNUSED(context_handle);
     ARG_UNUSED(timed_task);
     ARG_UNUSED(user_data);
 
-    ESP_LOGI(TAG, "{\"app_version\":\"%s\",\"temperature\":\"%.1fC\",\"humidity\":\"%.1f%%\"}",
-             app_version,
-             context->sensors.temp,
-             context->sensors.humidity);
+    char *msg = NULL;
+    asprintf(&msg, EVENT_DATA, app_version, context->sensors.temp, context->sensors.humidity);
+    ESP_LOGI(TAG, "Publishing msg \"%s\" to topic \"%s\"", msg, publish_topic_event);
+    iotc_publish(context_handle, publish_topic_event, msg, mqtt_qos, NULL, NULL);
+
+    free(msg);
 }
 
 static void mqtt_connection_state_changed(iotc_context_handle_t in_context_handle, void *data, iotc_state_t state)
