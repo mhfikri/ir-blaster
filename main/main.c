@@ -1,9 +1,11 @@
 #include "esp_event.h"
+#include "esp_log.h"
 
 #include "context.h"
 #include "mqtt.h"
 #include "ntp.h"
 #include "storage.h"
+#include "temperature.h"
 #include "wifi.h"
 
 static context_t *context;
@@ -16,4 +18,5 @@ void app_main(void)
     ESP_ERROR_CHECK(wifi_init(context));
     ESP_ERROR_CHECK(ntp_init(context));
     ESP_ERROR_CHECK(mqtt_init(context));
+    ESP_ERROR_CHECK(temperature_init(context));
 }
