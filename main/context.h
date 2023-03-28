@@ -18,6 +18,7 @@ typedef enum {
     CONTEXT_EVENT_TIME = BIT4,
     CONTEXT_EVENT_IOT = BIT5,
     CONTEXT_EVENT_NETWORK_ERROR = BIT6,
+    CONTEXT_EVENT_CONFIG = BIT7,
 } context_event_t;
 
 typedef struct {
@@ -25,8 +26,9 @@ typedef struct {
     EventGroupHandle_t event_group;
 
     struct {
-        uint8_t ssid[32];
-        uint8_t password[64];
+        const char *device_id;
+        const char *ssid;
+        const char *password;
     } config;
 
     struct {
@@ -52,5 +54,7 @@ esp_err_t context_set_network_error(context_t *context, bool error);
 esp_err_t context_set_time_updated(context_t *context);
 
 esp_err_t context_set_iot_connected(context_t *context, bool connected);
+
+esp_err_t context_set_config(context_t *context, const char *device_id, const char *ssid, const char *password);
 
 #endif // IR_BLASTER_CONTEXT_H

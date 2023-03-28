@@ -50,6 +50,15 @@ static void event_handler(void *arg, esp_event_base_t event_base, int32_t event_
     }
 }
 
+static char *append_mac(const char *string)
+{
+    uint8_t mac[6];
+    char *id_string = NULL;
+    esp_read_mac(mac, ESP_MAC_WIFI_STA);
+    asprintf(&id_string, "%s-%02X%02X%02X", string, mac[3], mac[4], mac[5]);
+    return id_string;
+}
+
 static void wifi_dev_init(void)
 {
     static bool initialized = false;
@@ -90,10 +99,6 @@ static esp_err_t wifi_is_provisioned(bool *provisioned)
 
     if (strlen((const char *)wifi_config.sta.ssid)) {
         *provisioned = true;
-        memcpy(context->config.ssid, wifi_config.sta.ssid, sizeof(wifi_config.sta.ssid));
-        memcpy(context->config.password, wifi_config.sta.password, sizeof(wifi_config.sta.password));
-        ESP_LOGI(TAG, "Saved ssid: %s", (const char *)context->config.ssid);
-        ESP_LOGI(TAG, "Saved password: %s", (const char *)context->config.password);
         ESP_ERROR_CHECK(context_set_wifi_provisioned(context));
     }
     return ESP_OK;
@@ -115,6 +120,17 @@ static void wifi_task(void *arg)
             ESP_ERROR_CHECK(smartconfig_init(context));
         }
         xEventGroupWaitBits(context->event_group, CONTEXT_EVENT_WIFI, pdTRUE, pdTRUE, portMAX_DELAY);
+
+        wifi_config_t wifi_config;
+        ESP_ERROR_CHECK(esp_wifi_get_config(WIFI_IF_STA, &wifi_config));
+
+        uint8_t ssid[33] = {0};
+        uint8_t password[65] = {0};
+        char *device_id = append_mac("IRB");
+        memcpy(ssid, wifi_config.sta.ssid, sizeof(wifi_config.sta.ssid));
+        memcpy(password, wifi_config.sta.password, sizeof(wifi_config.sta.password));
+        ESP_ERROR_CHECK(context_set_config(context, device_id, (const char *)ssid, (const char *)password));
+
         ESP_LOGI(TAG, "Connecting to %s...", (const char *)context->config.ssid);
         ESP_ERROR_CHECK(esp_wifi_connect());
         while (true) {

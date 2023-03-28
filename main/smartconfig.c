@@ -24,9 +24,9 @@ static EventGroupHandle_t sc_event_group;
 
 static void event_handler(void *arg, esp_event_base_t event_base, int32_t event_id, void *event_data)
 {
+    ARG_UNUSED(arg);
     ESP_LOGD(TAG, "Event base: %s, id: %d", event_base, event_id);
     if (event_base == SC_EVENT && event_id == SC_EVENT_GOT_SSID_PSWD) {
-        context_t *context = (context_t *)arg;
         smartconfig_event_got_ssid_pswd_t *event = (smartconfig_event_got_ssid_pswd_t *)event_data;
         wifi_config_t wifi_config;
 
@@ -34,8 +34,6 @@ static void event_handler(void *arg, esp_event_base_t event_base, int32_t event_
         memcpy(wifi_config.sta.ssid, event->ssid, sizeof(wifi_config.sta.ssid));
         memcpy(wifi_config.sta.password, event->password, sizeof(wifi_config.sta.password));
 
-        memcpy(context->config.ssid, event->ssid, sizeof(event->ssid));
-        memcpy(context->config.password, event->password, sizeof(event->password));
         ESP_LOGI(TAG, "Got ssid: %s", (const char *)wifi_config.sta.ssid);
         ESP_LOGI(TAG, "Got password: %s", (const char *)wifi_config.sta.password);
 
@@ -54,7 +52,7 @@ static void smartconfig_task(void *arg)
     ESP_LOGI(TAG, "Starting smartconfig...");
 
     sc_event_group = xEventGroupCreate();
-    ESP_ERROR_CHECK(esp_event_handler_register(SC_EVENT, ESP_EVENT_ANY_ID, &event_handler, context));
+    ESP_ERROR_CHECK(esp_event_handler_register(SC_EVENT, ESP_EVENT_ANY_ID, &event_handler, NULL));
 
     EventBits_t uxBits;
     ESP_ERROR_CHECK(esp_smartconfig_set_type(SC_TYPE_ESPTOUCH));
