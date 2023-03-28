@@ -95,3 +95,18 @@ esp_err_t context_set_iot_connected(context_t *context, bool connected)
     context_set_flags(context, connected, CONTEXT_EVENT_IOT);
     return ESP_OK;
 }
+
+esp_err_t context_set_config(context_t *context, const char *device_id, const char *ssid, const char *password)
+{
+    ARG_CHECK(context != NULL, ERR_PARAM_NULL);
+
+    EventBits_t bitsToSet = 0U;
+    context_lock(context);
+    context_set(context->config.device_id, device_id, CONTEXT_EVENT_CONFIG);
+    context_set(context->config.ssid, ssid, CONTEXT_EVENT_CONFIG);
+    context_set(context->config.password, password, CONTEXT_EVENT_CONFIG);
+    context_unlock(context);
+
+    if (bitsToSet) xEventGroupSetBits(context->event_group, bitsToSet);
+    return ESP_OK;
+}
