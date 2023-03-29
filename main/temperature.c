@@ -16,13 +16,15 @@ static void temperature_task(void *arg)
     context_t *context = (context_t *)arg;
     ARG_ERROR_CHECK(context != NULL, ERR_PARAM_NULL);
 
+    esp_err_t err;
     float temperature, humidity;
     while (true) {
-        if (dht_read_float_data(DHT_TYPE_AM2301, CONFIG_DHT22_DATA_GPIO, &humidity, &temperature) == ESP_OK) {
+        err = dht_read_float_data(DHT_TYPE_AM2301, CONFIG_DHT22_DATA_GPIO, &humidity, &temperature);
+        if (err == ESP_OK) {
             context_set_temp_humidity(context, temperature, humidity);
             ESP_LOGI(TAG, "Temperature: %.1fC Humidity: %.1f%%", temperature, humidity);
         } else {
-            ESP_LOGE(TAG, "Error cannot read data from DHT22.");
+            ESP_LOGE(TAG, "Cannot read data from DHT22, error 0x%X", err);
         }
         vTaskDelay(pdMS_TO_TICKS(2000));
     }
