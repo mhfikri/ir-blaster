@@ -36,7 +36,7 @@ static void ota_task(void *arg)
     esp_err_t ota_finish_err = ESP_OK;
     esp_http_client_config_t config = {
         .url = url,
-        .cert_pem = (char *)server_cert_pem_end,
+        .cert_pem = (char *)server_cert_pem_start,
         .timeout_ms = 5000,
         .keep_alive_enable = true,
     };
@@ -50,14 +50,14 @@ static void ota_task(void *arg)
     esp_https_ota_handle_t https_ota_handle = NULL;
     esp_err_t err = esp_https_ota_begin(&ota_config, &https_ota_handle);
     if (err != ESP_OK) {
-        ESP_LOGE(TAG, "esp_https_ota_begin failed 0x%x.", err);
+        ESP_LOGE(TAG, "esp_https_ota_begin failed, error 0x%X", err);
         vTaskDelete(NULL);
     }
 
     esp_app_desc_t app_desc;
     err = esp_https_ota_get_img_desc(https_ota_handle, &app_desc);
     if (err != ESP_OK) {
-        ESP_LOGE(TAG, "esp_https_ota_get_img_desc failed 0x%x.", err);
+        ESP_LOGE(TAG, "esp_https_ota_get_img_desc failed, error 0x%X", err);
         goto ota_end;
     }
 
@@ -85,7 +85,7 @@ static void ota_task(void *arg)
             if (ota_finish_err == ESP_ERR_OTA_VALIDATE_FAILED) {
                 ESP_LOGE(TAG, "Image validation failed, image is corrupted.");
             }
-            ESP_LOGE(TAG, "esp_https_ota_finish failed 0x%x.", ota_finish_err);
+            ESP_LOGE(TAG, "esp_https_ota_finish failed, error 0x%X", ota_finish_err);
             vTaskDelete(NULL);
         }
     }
