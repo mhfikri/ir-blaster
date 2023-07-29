@@ -6,7 +6,8 @@ cmake_minimum_required(VERSION 3.5)
 
 set(EXTRA_COMPONENT_DIRS 
         "$ENV{IDF_PATH}/../esp-idf-lib/components"
-        "$ENV{IDF_PATH}/../esp-iot-solution/components/general/weekly_timer"
+        "$ENV{IDF_PATH}/../esp-iot-solution/components/button"
+        "$ENV{IDF_PATH}/../esp-iot-solution/components/led/led_indicator"
         )
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)
 project(ir_blaster)

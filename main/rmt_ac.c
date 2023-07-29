@@ -15,11 +15,10 @@ unsigned char *output_buf;
 unsigned char current_temp, current_mode, current_fan, current_swing;
 static unsigned char do_verify, do_verify2;
 static unsigned char dType, dSize, dArray, db_data, mask, offset;
-static bool flag_swing;
 
-static AC_DB_FORM *DbPtr;
-static WAVE_FORM *WavePtr;
-static DATA_FORM *DataPtr;
+static const AC_DB_FORM *DbPtr;
+static const WAVE_FORM *WavePtr;
+static const DATA_FORM *DataPtr;
 
 static void Verify_data();
 static void IR_Generate();
@@ -192,6 +191,38 @@ unsigned char sum_all_nibble(unsigned char start_data, unsigned char end_data, b
     return lsb ? reverse_bit(cnt, csize) : cnt;
 }
 
+unsigned char gree_ver()
+{
+    unsigned char cnt = 0;
+    unsigned char dSeq = 1;
+    unsigned char byte_cnt = 1;
+    while (dSeq < 8) {
+        dType = DataPtr->DataMap[dSeq].Type;
+        dArray = DataPtr->DataMap[dSeq].Array;
+        dSize = DataPtr->DataMap[dSeq].Size;
+        if (dType == DATA) {
+            if (dArray != 18) {
+                db_data = output_buf[dArray];
+                while (dSize < 8) {
+                    offset = DataPtr->DataMap[dSeq + 1].Size;
+                    mask = DataPtr->DataMap[dSeq + 1].Array;
+                    db_data += (output_buf[mask] << dSize);
+                    dSeq++;
+                    dSize += offset;
+                }
+                if (byte_cnt < 5) {
+                    cnt += db_data & 0x0f;
+                } else if (4 < byte_cnt && byte_cnt < 8) {
+                    cnt += db_data >> 4;
+                }
+                byte_cnt++;
+            }
+        }
+        dSeq++;
+    }
+    return 0xc + cnt;
+}
+
 void Verify_data()
 {
     if (do_verify) {
@@ -214,6 +245,10 @@ void Verify_data()
 
         case daikin_v1:
             output_buf[18] = sum_all_nibble(3, 12, false);
+            break;
+
+        case gree_v:
+            output_buf[18] = gree_ver();
             break;
         }
     }
@@ -298,9 +333,9 @@ static inline void Pulse_Gen(unsigned char pulse, rmt_item32_t *item)
     item->duration1 = (*time) / 10 * RMT_TICK_10_US;
 }
 
-esp_err_t ac_power_on()
+esp_err_t rmt_ac_power_on()
 {
-    if (DbPtr->Data[POWER_ON] == 0xFF) {
+    if (DbPtr->Data[POWER_ON] == 0xff) {
         return ESP_ERR_NOT_SUPPORTED;
     }
 
@@ -335,9 +370,9 @@ esp_err_t ac_power_on()
     return ESP_OK;
 }
 
-esp_err_t ac_power_off()
+esp_err_t rmt_ac_power_off()
 {
-    if (DbPtr->Data[POWER_OFF] == 0xFF) {
+    if (DbPtr->Data[POWER_OFF] == 0xff) {
         return ESP_ERR_NOT_SUPPORTED;
     }
 
@@ -373,9 +408,9 @@ esp_err_t ac_power_off()
     return ESP_OK;
 }
 
-esp_err_t ac_fan_low()
+esp_err_t rmt_ac_fan_low()
 {
-    if (DbPtr->Data[FAN_LOW] == 0xFF) {
+    if (DbPtr->Data[FAN_LOW] == 0xff) {
         return ESP_ERR_NOT_SUPPORTED;
     }
 
@@ -389,15 +424,15 @@ esp_err_t ac_fan_low()
     return ESP_OK;
 }
 
-esp_err_t ac_fan_mid()
+esp_err_t rmt_ac_fan_medium()
 {
-    if (DbPtr->Data[FAN_MID] == 0xFF) {
+    if (DbPtr->Data[FAN_MEDIUM] == 0xff) {
         return ESP_ERR_NOT_SUPPORTED;
     }
 
-    current_fan = DbPtr->Data[FAN_MID];
-    output_buf[2] = DbPtr->Data[FAN_MID];
-    output_buf[6] = DbPtr->Data[FAN_MID];
+    current_fan = DbPtr->Data[FAN_MEDIUM];
+    output_buf[2] = DbPtr->Data[FAN_MEDIUM];
+    output_buf[6] = DbPtr->Data[FAN_MEDIUM];
 
     Verify_data();
     IR_Generate();
@@ -405,9 +440,9 @@ esp_err_t ac_fan_mid()
     return ESP_OK;
 }
 
-esp_err_t ac_fan_high()
+esp_err_t rmt_ac_fan_high()
 {
-    if (DbPtr->Data[FAN_HIGH] == 0xFF) {
+    if (DbPtr->Data[FAN_HIGH] == 0xff) {
         return ESP_ERR_NOT_SUPPORTED;
     }
 
@@ -421,9 +456,9 @@ esp_err_t ac_fan_high()
     return ESP_OK;
 }
 
-esp_err_t ac_fan_auto()
+esp_err_t rmt_ac_fan_auto()
 {
-    if (DbPtr->Data[FAN_AUTO] == 0xFF) {
+    if (DbPtr->Data[FAN_AUTO] == 0xff) {
         return ESP_ERR_NOT_SUPPORTED;
     }
 
@@ -437,13 +472,11 @@ esp_err_t ac_fan_auto()
     return ESP_OK;
 }
 
-esp_err_t ac_swing_on()
+esp_err_t rmt_ac_swing_on()
 {
-    if (DbPtr->Data[SWING_ON] == 0xFF) {
+    if (DbPtr->Data[SWING_ON] == 0xff) {
         return ESP_ERR_NOT_SUPPORTED;
     }
-
-    flag_swing = true;
 
     current_swing = DbPtr->Data[SWING_ON];
     output_buf[2] = DbPtr->Data[SWING_ON];
@@ -465,6 +498,12 @@ esp_err_t ac_swing_on()
         output_buf[8] = DbPtr->Default[0];
         break;
 
+    case GREE67AC_DM:
+        output_buf[20] = 0x00;
+        Verify_data();
+        IR_Generate();
+        break;
+
     default:
         Verify_data();
         IR_Generate();
@@ -474,13 +513,11 @@ esp_err_t ac_swing_on()
     return ESP_OK;
 }
 
-esp_err_t ac_swing_off()
+esp_err_t rmt_ac_swing_off()
 {
-    if (DbPtr->Data[SWING_OFF] == 0xFF) {
+    if (DbPtr->Data[SWING_OFF] == 0xff) {
         return ESP_ERR_NOT_SUPPORTED;
     }
-
-    flag_swing = false;
 
     current_swing = DbPtr->Data[SWING_OFF];
     output_buf[2] = DbPtr->Data[SWING_OFF];
@@ -501,6 +538,13 @@ esp_err_t ac_swing_off()
         output_buf[7] = DbPtr->Temp[current_temp];
         output_buf[8] = DbPtr->Default[0];
         break;
+
+    case GREE67AC_DM:
+        output_buf[20] = 0x01;
+        Verify_data();
+        IR_Generate();
+        break;
+
     default:
         Verify_data();
         IR_Generate();
@@ -510,13 +554,13 @@ esp_err_t ac_swing_off()
     return ESP_OK;
 }
 
-esp_err_t ac_temp_up()
+esp_err_t rmt_ac_temp_up()
 {
-    if (DbPtr->Data[TEMP_UP] == 0xFF) {
+    if (DbPtr->Data[TEMP_UP] == 0xff) {
         if (current_temp < 12) {
             current_temp++;
         }
-        if (DbPtr->Temp[current_temp] == 0xFF) {
+        if (DbPtr->Temp[current_temp] == 0xff) {
             return ESP_ERR_NOT_SUPPORTED;
         } else {
             output_buf[7] = DbPtr->Temp[current_temp];
@@ -531,13 +575,13 @@ esp_err_t ac_temp_up()
     return ESP_OK;
 }
 
-esp_err_t ac_temp_down()
+esp_err_t rmt_ac_temp_down()
 {
-    if (DbPtr->Data[TEMP_DOWN] == 0xFF) {
+    if (DbPtr->Data[TEMP_DOWN] == 0xff) {
         if (current_temp > 0) {
             current_temp--;
         }
-        if (DbPtr->Temp[current_temp] == 0xFF) {
+        if (DbPtr->Temp[current_temp] == 0xff) {
             return ESP_ERR_NOT_SUPPORTED;
         } else {
             output_buf[7] = DbPtr->Temp[current_temp];

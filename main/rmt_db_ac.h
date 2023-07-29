@@ -13,6 +13,7 @@
 #define PANASONIC68AC_1 0x06
 #define PANASONIC152AC_1 0x07
 #define PANASONIC216AC_2 0x08
+#define GREE67AC_1 0x09
 
 // Dataform List
 #define SHARP32AC_DM 0x00
@@ -24,14 +25,15 @@
 #define PANASONIC68AC_DM 0x06
 #define PANASONIC152AC_DM_1 0x07
 #define PANASONIC216AC_DM_1 0x08
+#define GREE67AC_DM 0x09
 
 // Checksum List
 #define lson5_v1 0x00
 #define daikin_v1 0x01
 #define sob_v 0x02
 #define sob8_v1 0x03
-#define sob_v 0x04
-#define sob10_v1 0x05
+#define sob10_v1 0x04
+#define gree_v 0x05
 
 // Data Type Define...
 #define NONE 0x00

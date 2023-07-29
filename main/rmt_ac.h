@@ -16,7 +16,7 @@ typedef enum {
     MODE_DRY,
     MODE_AUTO,
     FAN_LOW,
-    FAN_MID,
+    FAN_MEDIUM,
     FAN_HIGH,
     FAN_AUTO,
     FAN_TURBO,
@@ -27,22 +27,15 @@ typedef enum {
 } AC_DATA_LST;
 
 esp_err_t AC_Brand_Set(unsigned short Set_Num);
-
-//air conditioner api list
-esp_err_t ac_power_on();
-esp_err_t ac_power_off();
-esp_err_t ac_mode_cool();
-esp_err_t ac_mode_warm();
-esp_err_t ac_mode_dry();
-esp_err_t ac_mode_auto();
-esp_err_t ac_fan_low();
-esp_err_t ac_fan_mid();
-esp_err_t ac_fan_high();
-esp_err_t ac_fan_auto();
-esp_err_t ac_fan_turbo();
-esp_err_t ac_swing_on();
-esp_err_t ac_swing_off();
-esp_err_t ac_temp_up();
-esp_err_t ac_temp_down();
+esp_err_t rmt_ac_power_on();
+esp_err_t rmt_ac_power_off();
+esp_err_t rmt_ac_fan_low();
+esp_err_t rmt_ac_fan_medium();
+esp_err_t rmt_ac_fan_high();
+esp_err_t rmt_ac_fan_auto();
+esp_err_t rmt_ac_swing_on();
+esp_err_t rmt_ac_swing_off();
+esp_err_t rmt_ac_temp_up();
+esp_err_t rmt_ac_temp_down();
 
 #endif

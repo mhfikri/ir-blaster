@@ -15,13 +15,15 @@
 #include <iotc_jwt.h>
 #include <iotc_types.h>
 
+#include "cmd_rmt.h"
 #include "context.h"
 #include "error.h"
 #include "mqtt.h"
 #include "ota.h"
 
 #define DEVICE_PATH "projects/%s/locations/%s/registries/%s/devices/%s"
-#define SUBSCRIBE_TOPIC_COMMAND "/devices/%s/commands/#"
+#define SUBSCRIBE_TOPIC_WILDCARD_COMMAND "/devices/%s/commands/#"
+#define SUBSCRIBE_TOPIC_COMMAND "/devices/%s/commands"
 #define SUBSCRIBE_TOPIC_CONFIG "/devices/%s/config"
 #define PUBLISH_TOPIC_EVENT "/devices/%s/events"
 #define PUBLISH_TOPIC_STATE "/devices/%s/state"
@@ -37,8 +39,10 @@ static const iotc_mqtt_qos_t mqtt_qos = IOTC_MQTT_QOS_AT_LEAST_ONCE;
 static iotc_timed_task_handle_t delayed_publish_task = IOTC_INVALID_TIMED_TASK_HANDLE;
 static iotc_context_handle_t iotc_context = IOTC_INVALID_CONTEXT_HANDLE;
 
+static char *subscribe_topic_wildcard_command;
 static char *subscribe_topic_command;
 static char *subscribe_topic_config;
+static char *publish_topic_event;
 
 static char jwt[IOTC_JWT_SIZE] = {0};
 static const uint32_t jwt_expiration_sec = 3600 * 24; // 24 hours.
@@ -79,14 +83,17 @@ static esp_err_t mqtt_handle_command(const uint8_t *payload)
 {
     cJSON *cmd = cJSON_Parse((const char *)payload);
     int type = cJSON_GetObjectItem(cmd, "cmdType")->valueint;
+    cJSON *data = cJSON_GetObjectItem(cmd, "cmdData");
     switch (type) {
     case 0:
         ESP_LOGI(TAG, "Restarting in 3 seconds...");
         vTaskDelay(pdMS_TO_TICKS(3000));
         esp_restart();
-    default:
-        ESP_LOGI(TAG, "Receiving command type: %d", type);
+    case 1:
+        cmd_rmt(data);
         break;
+    default:
+        ESP_LOGE(TAG, "Invalid command type: %d", type);
     }
     return ESP_OK;
 }
@@ -138,14 +145,12 @@ static void mqtt_publish_telemetry_event(iotc_context_handle_t context_handle, i
     ARG_UNUSED(timed_task);
     ARG_UNUSED(user_data);
 
-    char *publish_topic = NULL;
-    asprintf(&publish_topic, PUBLISH_TOPIC_EVENT, context->config.device_id);
     char *publish_message = NULL;
     asprintf(&publish_message, EVENT_DATA, app_version, context->sensors.temp, context->sensors.humidity);
-    ESP_LOGI(TAG, "Publishing msg \"%s\" to topic \"%s\"", publish_message, publish_topic);
-    iotc_publish(context_handle, publish_topic, publish_message, mqtt_qos, NULL, NULL);
+    ESP_LOGI(TAG, "Publishing msg \"%s\" to topic \"%s\"", publish_message, publish_topic_event);
+    iotc_publish(context_handle, publish_topic_event, publish_message, mqtt_qos,
+                 /* callback= */ NULL, /* user_data= */ NULL);
 
-    free(publish_topic);
     free(publish_message);
 }
 
@@ -161,12 +166,10 @@ static void mqtt_connection_state_changed(iotc_context_handle_t in_context_handl
 
         /* Publish immediately upon connect. 'mqtt_publish_telemetry_event' is defined above and invokes the IoTC
          * API to publish a message. */
-        asprintf(&subscribe_topic_command, SUBSCRIBE_TOPIC_COMMAND, context->config.device_id);
-        iotc_state_t err = iotc_subscribe(in_context_handle, subscribe_topic_command, mqtt_qos,
+        iotc_state_t err = iotc_subscribe(in_context_handle, subscribe_topic_wildcard_command, mqtt_qos,
                                           &mqtt_subscribe_callback, /* user_data= */ NULL);
-        ESP_LOGI(TAG, "Subscribed to topic, error: %d: '%s'", err, subscribe_topic_command);
+        ESP_LOGI(TAG, "Subscribed to topic, error: %d: '%s'", err, subscribe_topic_wildcard_command);
 
-        asprintf(&subscribe_topic_config, SUBSCRIBE_TOPIC_CONFIG, context->config.device_id);
         err = iotc_subscribe(in_context_handle, subscribe_topic_config, mqtt_qos,
                              &mqtt_subscribe_callback, /* user_data= */ NULL);
         ESP_LOGI(TAG, "Subscribed to topic, error: %d: '%s'", err, subscribe_topic_config);
@@ -197,11 +200,6 @@ static void mqtt_connection_state_changed(iotc_context_handle_t in_context_handl
     case IOTC_CONNECTION_STATE_CLOSED: {
         ESP_LOGW(TAG, "Connection error: CLOSED state: %d", state);
         mqtt_dispatch_connected(false);
-
-        free(subscribe_topic_command);
-        free(subscribe_topic_config);
-        subscribe_topic_command = NULL;
-        subscribe_topic_config = NULL;
 
         /* When the connection is closed it's better to cancel some of previously registered activities. Using
          * cancel function on handler will remove the handler from the timed queue which prevents the
@@ -258,12 +256,12 @@ static void mqtt_task(void *arg)
             ESP_ERROR_CHECK(ESP_ERR_INVALID_STATE);
         }
 
-        ESP_LOGI(TAG, "Connecting to Google IoT Core");
         mqtt_create_jwt_token();
 
         char *device_path = NULL;
         asprintf(&device_path, DEVICE_PATH, CONFIG_GIOT_PROJECT_ID, CONFIG_GIOT_LOCATION, CONFIG_GIOT_REGISTRY_ID,
                  context->config.device_id);
+        ESP_LOGI(TAG, "Connecting to %s", device_path);
         /* Queue a connection request to be completed asynchronously. The 'mqtt_connection_state_changed' parameter is the
          * name of the callback function after the connection request completes, and its implementation should handle both
          * successful connections and unsuccessful connections as well as disconnections. */
@@ -305,6 +303,13 @@ esp_err_t mqtt_init(context_t *ctx)
     context = ctx;
     app_version = ota_get_app_version();
     mqtt_dispatch_connected(false);
+
+    ESP_LOGI(TAG, "Waiting for config to be set.");
+    xEventGroupWaitBits(context->event_group, CONTEXT_EVENT_CONFIG, pdFALSE, pdTRUE, portMAX_DELAY);
+    asprintf(&subscribe_topic_wildcard_command, SUBSCRIBE_TOPIC_WILDCARD_COMMAND, context->config.device_id);
+    asprintf(&subscribe_topic_command, SUBSCRIBE_TOPIC_COMMAND, context->config.device_id);
+    asprintf(&subscribe_topic_config, SUBSCRIBE_TOPIC_CONFIG, context->config.device_id);
+    asprintf(&publish_topic_event, PUBLISH_TOPIC_EVENT, context->config.device_id);
 
     xTaskCreatePinnedToCore(mqtt_task, "mqtt", 5120, NULL, tskIDLE_PRIORITY + 5, NULL, tskNO_AFFINITY);
     return ESP_OK;
