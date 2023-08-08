@@ -29,7 +29,7 @@
 #define PUBLISH_TOPIC_STATE "/devices/%s/state"
 #define TASK_REPEAT_FOREVER 1
 
-#define EVENT_DATA "{\"app_version\":\"%s\",\"temperature\":\"%.1fC\",\"humidity\":\"%.1f%%\"}"
+#define EVENT_DATA "{\"appVersion\":\"%s\",\"temperature\":\"%.01f\",\"humidity\":\"%.01f\"}"
 
 static const char *TAG = "mqtt";
 
