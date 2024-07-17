@@ -9,6 +9,7 @@
 #include "esp_wifi.h"
 
 #include "context.h"
+#include "driver.h"
 #include "error.h"
 #include "smartconfig.h"
 
@@ -55,7 +56,7 @@ static char *append_mac(const char *string)
     uint8_t mac[6];
     char *id_string = NULL;
     esp_read_mac(mac, ESP_MAC_WIFI_STA);
-    asprintf(&id_string, "%s-%02X%02X%02X", string, mac[3], mac[4], mac[5]);
+    asprintf(&id_string, "%s_%02X%02X%02X", string, mac[3], mac[4], mac[5]);
     return id_string;
 }
 
@@ -117,13 +118,14 @@ static void wifi_task(void *arg)
         ESP_ERROR_CHECK(wifi_is_provisioned(&provisioned));
         if (!provisioned) {
             ESP_LOGI(TAG, "Starting provisioning...");
+            led_provisioning_blink_start();
             ESP_ERROR_CHECK(smartconfig_init(context));
         }
         xEventGroupWaitBits(context->event_group, CONTEXT_EVENT_WIFI, pdTRUE, pdTRUE, portMAX_DELAY);
+        led_provisioning_blink_stop();
 
         wifi_config_t wifi_config;
         ESP_ERROR_CHECK(esp_wifi_get_config(WIFI_IF_STA, &wifi_config));
-
         uint8_t ssid[33] = {0};
         uint8_t password[65] = {0};
         char *device_id = append_mac("IRB");
@@ -152,6 +154,6 @@ esp_err_t wifi_init(context_t *context)
 {
     ARG_CHECK(context != NULL, ERR_PARAM_NULL);
 
-    xTaskCreatePinnedToCore(wifi_task, "wifi", 4096, context, configMAX_PRIORITIES - 7, NULL, tskNO_AFFINITY);
+    xTaskCreatePinnedToCore(wifi_task, "wifi_task", 4096, context, configMAX_PRIORITIES - 7, NULL, tskNO_AFFINITY);
     return ESP_OK;
 }

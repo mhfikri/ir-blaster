@@ -28,7 +28,11 @@ static void Init_Output_Buf();
 esp_err_t AC_Brand_Set(unsigned short Set_Num)
 {
     unsigned short DbAccessCode = 0;
-    esp_err_t err = driver_rmt_find_model(Set_Num, &AC_DbForm[0].Num, acdb_size, sizeof(AC_DB_FORM) / 2, &DbAccessCode);
+    esp_err_t err = rmt_find_model(Set_Num,
+                                   &AC_DbForm[0].Num,
+                                   acdb_size,
+                                   sizeof(AC_DB_FORM) / 2,
+                                   &DbAccessCode);
     if (err != ESP_OK) {
         return err;
     }
@@ -67,7 +71,7 @@ static void Init_Output_Buf()
             current_swing = output_buf[dArray];
             break;
         case 6:
-            output_buf[dArray] = DbPtr->Data[FAN_HIGH];
+            output_buf[dArray] = DbPtr->Data[FAN_LOW];
             current_fan = output_buf[dArray];
             break;
         case 7:
@@ -121,7 +125,7 @@ unsigned char reverse_bit(unsigned char num, int nbit)
     return reverse_num;
 }
 
-unsigned char sum_all_byte(unsigned char start_data, unsigned char end_data, bool lsb)
+unsigned char checksum_sum_byte(unsigned char start_data, unsigned char end_data, bool lsb)
 {
     unsigned char cnt = 0;
     unsigned char csize = 0; // checksum size
@@ -153,45 +157,7 @@ unsigned char sum_all_byte(unsigned char start_data, unsigned char end_data, boo
     return lsb ? reverse_bit(cnt, csize) : cnt;
 }
 
-unsigned char sum_all_nibble(unsigned char start_data, unsigned char end_data, bool lsb)
-{
-    unsigned char cnt = 0;
-    unsigned char csize = 0;
-    unsigned char db_data2 = 0;
-    while (start_data < end_data) {
-        dType = DataPtr->DataMap[start_data].Type;
-        dArray = DataPtr->DataMap[start_data].Array;
-        dSize = DataPtr->DataMap[start_data].Size;
-        if (dType == DATA) {
-            if (dArray == 18) {
-                csize = DataPtr->DataMap[start_data].Size;
-            } else {
-                db_data = output_buf[dArray];
-                while (dSize % 4 != 0) {
-                    offset = DataPtr->DataMap[start_data + 1].Size;
-                    mask = DataPtr->DataMap[start_data + 1].Array;
-                    db_data += (output_buf[mask] << dSize);
-                    start_data++;
-                    dSize += offset;
-                }
-                if (dSize == 8) {
-                    if (lsb) {
-                        db_data2 = db_data & 0x0f;
-                        db_data = db_data >> 4;
-                    } else {
-                        db_data = (db_data >> 4) + (db_data & 0x0f);
-                    }
-                }
-                cnt += lsb ? reverse_bit(db_data, 4) + reverse_bit(db_data2, 4) : db_data;
-                db_data2 = 0;
-            }
-        }
-        start_data++;
-    }
-    return lsb ? reverse_bit(cnt, csize) : cnt;
-}
-
-unsigned char gree_ver()
+unsigned char checksum_gree()
 {
     unsigned char cnt = 0;
     unsigned char dSeq = 1;
@@ -227,28 +193,11 @@ void Verify_data()
 {
     if (do_verify) {
         switch (DbPtr->Verify) {
-        case sob_v:
-            output_buf[18] = sum_all_byte(0, DATA_MAP_SIZE, false);
+        case PANASONIC152AC:
+            output_buf[18] = checksum_sum_byte(0, DATA_MAP_SIZE, false);
             break;
-
-        case sob8_v1:
-            output_buf[18] = sum_all_byte(8, DATA_MAP_SIZE, false);
-            break;
-
-        case sob10_v1:
-            output_buf[18] = sum_all_byte(10, DATA_MAP_SIZE, false);
-            break;
-
-        case lson5_v1:
-            output_buf[18] = sum_all_nibble(5, DATA_MAP_SIZE, true);
-            break;
-
-        case daikin_v1:
-            output_buf[18] = sum_all_nibble(3, 12, false);
-            break;
-
-        case gree_v:
-            output_buf[18] = gree_ver();
+        case SHARP67AC:
+            output_buf[18] = checksum_gree();
             break;
         }
     }
@@ -343,24 +292,6 @@ esp_err_t rmt_ac_power_on()
     output_buf[3] = DbPtr->Data[POWER_ON];
 
     switch (DbPtr->DataForm) {
-    case SHARP32AC_DM:
-        output_buf[20] = 0x00;
-        Verify_data();
-        IR_Generate();
-        output_buf[20] = DbPtr->Keypress;
-        break;
-    case SHARP63AC_DM:
-        output_buf[12] = 0x01;
-        Verify_data();
-        IR_Generate();
-        output_buf[12] = DbPtr->Default[4];
-        break;
-    case DAIKIN64AC_DM_1:
-        output_buf[20] = DbPtr->Data[POWER_ON];
-        Verify_data();
-        IR_Generate();
-        output_buf[20] = DbPtr->Keypress;
-        break;
     default:
         Verify_data();
         IR_Generate();
@@ -380,30 +311,70 @@ esp_err_t rmt_ac_power_off()
     output_buf[3] = DbPtr->Data[POWER_OFF];
 
     switch (DbPtr->DataForm) {
-    case SHARP32AC_DM:
-        output_buf[20] = 0x00;
-        Verify_data();
-        IR_Generate();
-        output_buf[20] = DbPtr->Keypress;
-        break;
-    case SHARP63AC_DM:
-        output_buf[12] = 0x02;
-        Verify_data();
-        IR_Generate();
-        output_buf[12] = DbPtr->Default[4];
-        break;
-    case DAIKIN64AC_DM_1:
-        output_buf[20] = DbPtr->Data[POWER_OFF];
-        Verify_data();
-        IR_Generate();
-        output_buf[20] = DbPtr->Keypress;
-        break;
     default:
         Verify_data();
         IR_Generate();
         break;
     }
     output_buf[3] = DbPtr->Data[POWER_ON];
+
+    return ESP_OK;
+}
+
+esp_err_t rmt_ac_temp_up()
+{
+    if (DbPtr->Data[TEMP_UP] == 0xff) {
+        if (current_temp < 12) {
+            current_temp++;
+        }
+        if (DbPtr->Temp[current_temp] == 0xff) {
+            return ESP_ERR_NOT_SUPPORTED;
+        } else {
+            output_buf[7] = DbPtr->Temp[current_temp];
+        }
+    } else {
+        output_buf[2] = DbPtr->Data[TEMP_UP];
+    }
+
+    Verify_data();
+    IR_Generate();
+
+    return ESP_OK;
+}
+
+esp_err_t rmt_ac_temp_down()
+{
+    if (DbPtr->Data[TEMP_DOWN] == 0xff) {
+        if (current_temp > 0) {
+            current_temp--;
+        }
+        if (DbPtr->Temp[current_temp] == 0xff) {
+            return ESP_ERR_NOT_SUPPORTED;
+        } else {
+            output_buf[7] = DbPtr->Temp[current_temp];
+        }
+    } else {
+        output_buf[2] = DbPtr->Data[TEMP_DOWN];
+    }
+
+    Verify_data();
+    IR_Generate();
+
+    return ESP_OK;
+}
+
+esp_err_t rmt_ac_fan_auto()
+{
+    if (DbPtr->Data[FAN_AUTO] == 0xff) {
+        return ESP_ERR_NOT_SUPPORTED;
+    }
+
+    current_fan = DbPtr->Data[FAN_AUTO];
+    output_buf[2] = DbPtr->Data[FAN_AUTO];
+    output_buf[6] = DbPtr->Data[FAN_AUTO];
+
+    Verify_data();
+    IR_Generate();
 
     return ESP_OK;
 }
@@ -456,22 +427,6 @@ esp_err_t rmt_ac_fan_high()
     return ESP_OK;
 }
 
-esp_err_t rmt_ac_fan_auto()
-{
-    if (DbPtr->Data[FAN_AUTO] == 0xff) {
-        return ESP_ERR_NOT_SUPPORTED;
-    }
-
-    current_fan = DbPtr->Data[FAN_AUTO];
-    output_buf[2] = DbPtr->Data[FAN_AUTO];
-    output_buf[6] = DbPtr->Data[FAN_AUTO];
-
-    Verify_data();
-    IR_Generate();
-
-    return ESP_OK;
-}
-
 esp_err_t rmt_ac_swing_on()
 {
     if (DbPtr->Data[SWING_ON] == 0xff) {
@@ -483,22 +438,7 @@ esp_err_t rmt_ac_swing_on()
     output_buf[5] = DbPtr->Data[SWING_ON];
 
     switch (DbPtr->DataForm) {
-    case SHARP32AC_DM:
-        output_buf[20] = 0x00;
-        output_buf[4] = 0x00;
-        output_buf[6] = 0x0e;
-        output_buf[7] = 0x00;
-        output_buf[8] = 0x0d;
-        Verify_data();
-        IR_Generate();
-        output_buf[20] = DbPtr->Keypress;
-        output_buf[4] = current_mode;
-        output_buf[6] = current_fan;
-        output_buf[7] = DbPtr->Temp[current_temp];
-        output_buf[8] = DbPtr->Default[0];
-        break;
-
-    case GREE67AC_DM:
+    case SHARP67AC_DM:
         output_buf[20] = 0x00;
         Verify_data();
         IR_Generate();
@@ -524,22 +464,7 @@ esp_err_t rmt_ac_swing_off()
     output_buf[5] = DbPtr->Data[SWING_OFF];
 
     switch (DbPtr->DataForm) {
-    case SHARP32AC_DM:
-        output_buf[20] = 0x00;
-        output_buf[4] = 0x00;
-        output_buf[6] = 0x0e;
-        output_buf[7] = 0x00;
-        output_buf[8] = 0x0d;
-        Verify_data();
-        IR_Generate();
-        output_buf[20] = DbPtr->Keypress;
-        output_buf[4] = current_mode;
-        output_buf[6] = current_fan;
-        output_buf[7] = DbPtr->Temp[current_temp];
-        output_buf[8] = DbPtr->Default[0];
-        break;
-
-    case GREE67AC_DM:
+    case SHARP67AC_DM:
         output_buf[20] = 0x01;
         Verify_data();
         IR_Generate();
@@ -550,48 +475,6 @@ esp_err_t rmt_ac_swing_off()
         IR_Generate();
         break;
     }
-
-    return ESP_OK;
-}
-
-esp_err_t rmt_ac_temp_up()
-{
-    if (DbPtr->Data[TEMP_UP] == 0xff) {
-        if (current_temp < 12) {
-            current_temp++;
-        }
-        if (DbPtr->Temp[current_temp] == 0xff) {
-            return ESP_ERR_NOT_SUPPORTED;
-        } else {
-            output_buf[7] = DbPtr->Temp[current_temp];
-        }
-    } else {
-        output_buf[2] = DbPtr->Data[TEMP_UP]; // TEMP UP
-    }
-
-    Verify_data();
-    IR_Generate();
-
-    return ESP_OK;
-}
-
-esp_err_t rmt_ac_temp_down()
-{
-    if (DbPtr->Data[TEMP_DOWN] == 0xff) {
-        if (current_temp > 0) {
-            current_temp--;
-        }
-        if (DbPtr->Temp[current_temp] == 0xff) {
-            return ESP_ERR_NOT_SUPPORTED;
-        } else {
-            output_buf[7] = DbPtr->Temp[current_temp];
-        }
-    } else {
-        output_buf[2] = DbPtr->Data[TEMP_DOWN]; // TEMP UP
-    }
-
-    Verify_data();
-    IR_Generate();
 
     return ESP_OK;
 }

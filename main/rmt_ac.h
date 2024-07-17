@@ -1,5 +1,5 @@
-#ifndef __AC_IR_TX_H__
-#define __AC_IR_TX_H__
+#ifndef IR_BLASTER_RMT_AC_H
+#define IR_BLASTER_RMT_AC_H
 
 #include "esp_err.h"
 
@@ -29,13 +29,13 @@ typedef enum {
 esp_err_t AC_Brand_Set(unsigned short Set_Num);
 esp_err_t rmt_ac_power_on();
 esp_err_t rmt_ac_power_off();
+esp_err_t rmt_ac_temp_up();
+esp_err_t rmt_ac_temp_down();
+esp_err_t rmt_ac_fan_auto();
 esp_err_t rmt_ac_fan_low();
 esp_err_t rmt_ac_fan_medium();
 esp_err_t rmt_ac_fan_high();
-esp_err_t rmt_ac_fan_auto();
 esp_err_t rmt_ac_swing_on();
 esp_err_t rmt_ac_swing_off();
-esp_err_t rmt_ac_temp_up();
-esp_err_t rmt_ac_temp_down();
 
-#endif
+#endif // IR_BLASTER_RMT_AC_H

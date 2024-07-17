@@ -3,39 +3,12 @@
 
 #include "rmt_typedef.h"
 
-// Waveform List
-#define SHARP32AC_1 0x00
-#define SHARP48AC_1 0x01
-#define SHARP63AC_1 0x02
-#define DAIKIN64AC_1 0x03
-#define DAIKIN104AC_2 0x04
-#define DAIKIN160AC_1 0x05
-#define PANASONIC68AC_1 0x06
-#define PANASONIC152AC_1 0x07
-#define PANASONIC216AC_2 0x08
-#define GREE67AC_1 0x09
+#define SHARP67AC 0x00
+#define PANASONIC152AC 0x01
 
-// Dataform List
-#define SHARP32AC_DM 0x00
-#define SHARP48AC_DM 0x01
-#define SHARP63AC_DM 0x02
-#define DAIKIN64AC_DM_1 0x03
-#define DAIKIN104AC_DM 0x04
-#define DAIKIN160AC_DM_1 0x05
-#define PANASONIC68AC_DM 0x06
-#define PANASONIC152AC_DM_1 0x07
-#define PANASONIC216AC_DM_1 0x08
-#define GREE67AC_DM 0x09
+#define SHARP67AC_DM 0x00
+#define PANASONIC152AC_DM 0x01
 
-// Checksum List
-#define lson5_v1 0x00
-#define daikin_v1 0x01
-#define sob_v 0x02
-#define sob8_v1 0x03
-#define sob10_v1 0x04
-#define gree_v 0x05
-
-// Data Type Define...
 #define NONE 0x00
 #define LEADER 0x10
 #define CUSTOM1 0x20
@@ -101,9 +74,9 @@ typedef struct
     unsigned char RepMsk;
 } AC_DB_FORM;
 
-extern const AC_DB_FORM AC_DbForm[];
-extern const WAVE_FORM AC_WaveForm[];
-extern const DATA_FORM AC_DataForm[];
+extern AC_DB_FORM AC_DbForm[];
+extern WAVE_FORM AC_WaveForm[];
+extern DATA_FORM AC_DataForm[];
 
 extern unsigned int acdb_size;
 

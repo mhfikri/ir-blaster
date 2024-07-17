@@ -8,13 +8,14 @@
 #include "esp_ota_ops.h"
 #include "esp_system.h"
 
+#include "driver.h"
 #include "error.h"
 #include "ota.h"
 
 static const char *TAG = "ota";
 
-extern const uint8_t server_cert_pem_start[] asm("_binary_ca_cert_pem_start");
-extern const uint8_t server_cert_pem_end[] asm("_binary_ca_cert_pem_end");
+extern const uint8_t ota_cert_pem_start[] asm("_binary_ota_cert_pem_start");
+extern const uint8_t ota_cert_pem_end[] asm("_binary_ota_cert_pem_end");
 
 const char *ota_get_app_version(void)
 {
@@ -36,7 +37,7 @@ static void ota_task(void *arg)
     esp_err_t ota_finish_err = ESP_OK;
     esp_http_client_config_t config = {
         .url = url,
-        .cert_pem = (char *)server_cert_pem_start,
+        .cert_pem = (char *)ota_cert_pem_start,
         .timeout_ms = 5000,
         .keep_alive_enable = true,
     };
@@ -76,6 +77,7 @@ static void ota_task(void *arg)
         // the OTA image was not completely received and user can customise the response to this situation.
         ESP_LOGE(TAG, "Complete data was not received.");
     } else {
+        led_ota_blink_stop();
         ota_finish_err = esp_https_ota_finish(https_ota_handle);
         if ((err == ESP_OK) && (ota_finish_err == ESP_OK)) {
             ESP_LOGI(TAG, "OTA update successful, rebooting...");
@@ -93,6 +95,7 @@ static void ota_task(void *arg)
 ota_end:
     esp_https_ota_abort(https_ota_handle);
     ESP_LOGE(TAG, "OTA update failed.");
+    led_ota_blink_stop();
     vTaskDelete(NULL);
 }
 
@@ -100,6 +103,7 @@ esp_err_t ota_init(char *url)
 {
     ARG_CHECK(url != NULL, ERR_PARAM_NULL);
 
-    xTaskCreate(ota_task, "ota", 8192, url, 7, NULL);
+    led_ota_blink_start();
+    xTaskCreate(ota_task, "ota_task", 8192, url, 7, NULL);
     return ESP_OK;
 }

@@ -1,3 +1,0 @@
-[submodule "components/esp-google-iot"]
-	path = components/esp-google-iot
-	url = https://github.com/mhfikri/esp-google-iot.git
