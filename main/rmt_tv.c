@@ -137,6 +137,7 @@ static void IR_Generate(unsigned char keycode)
     item_num = rmt_build_items(item, keycode);
     gpio_matrix_out(RMT_TX_EXTENDER_GPIO, RMT_TX_SIGNAL_IDX, false, false);
     rmt_write_items(RMT_TX_CHANNEL, item, item_num, true);
+    led_double_blink();
     free(item);
 }
 

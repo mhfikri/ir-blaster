@@ -1,7 +1,7 @@
 #include "rmt_db_tv.h"
 
 TV_DB_FORM TV_DbForm[] = {
-    {20000,
+    {2000,
      SAMSUNGTV,
      LC8C8D8DB8E,
      0,
@@ -16,7 +16,7 @@ TV_DB_FORM TV_DbForm[] = {
      0xff,
      0xff},
 
-    {20001,
+    {2010,
      LGTV,
      LC8CB8D8DB8E,
      0,
@@ -34,7 +34,7 @@ TV_DB_FORM TV_DbForm[] = {
 
 WAVE_FORM TV_WaveForm[] = {
     // SAMSUNGTV
-    {{70, 141},
+    {{70, 140},
      {{{HIGH, 550}, {LOW, 570}},
       {{HIGH, 550}, {LOW, 1690}},
       {{HIGH, 4510}, {LOW, 4510}},
@@ -42,7 +42,7 @@ WAVE_FORM TV_WaveForm[] = {
       {{0, 0}, {0, 0}}}},
 
     // LGTV
-    {{70, 141},
+    {{70, 140},
      {{{HIGH, 570}, {LOW, 570}},
       {{HIGH, 570}, {LOW, 1710}},
       {{HIGH, 9150}, {LOW, 4610}},

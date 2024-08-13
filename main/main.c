@@ -20,5 +20,5 @@ void app_main(void)
     ESP_ERROR_CHECK(wifi_init(context));
     ESP_ERROR_CHECK(ntp_init(context));
     ESP_ERROR_CHECK(aws_iot_init(context));
-    // ESP_ERROR_CHECK(temperature_init(context));
+    ESP_ERROR_CHECK(temperature_init(context));
 }

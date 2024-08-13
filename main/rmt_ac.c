@@ -23,14 +23,14 @@ static const DATA_FORM *DataPtr;
 static void Verify_data();
 static void IR_Generate();
 static inline void Pulse_Gen(unsigned char pulse, rmt_item32_t *item);
-static void Init_Output_Buf();
+static void Init_Output_Buf(unsigned char temp, AC_DATA_LST fan, AC_DATA_LST swing);
 
-esp_err_t AC_Brand_Set(unsigned short Set_Num)
+esp_err_t AC_Brand_Set(unsigned short Set_Num, bool is_auto)
 {
     unsigned short DbAccessCode = 0;
     esp_err_t err = rmt_find_model(Set_Num,
                                    &AC_DbForm[0].Num,
-                                   acdb_size,
+                                   ac_db_size,
                                    sizeof(AC_DB_FORM) / 2,
                                    &DbAccessCode);
     if (err != ESP_OK) {
@@ -42,16 +42,20 @@ esp_err_t AC_Brand_Set(unsigned short Set_Num)
 
     RMT.carrier_duty_ch[RMT_TX_CHANNEL].high = WavePtr->Freq.High * 10;
     RMT.carrier_duty_ch[RMT_TX_CHANNEL].low = WavePtr->Freq.Low * 10;
-    Init_Output_Buf();
+    if (is_auto) {
+        Init_Output_Buf(0, FAN_AUTO, SWING_ON);
+    } else {
+        Init_Output_Buf(6, FAN_LOW, SWING_OFF);
+    }
     return err;
 }
 
-static void Init_Output_Buf()
+static void Init_Output_Buf(unsigned char temp, AC_DATA_LST fan, AC_DATA_LST swing)
 {
     unsigned char dSeq = 1, dArray;
     output_buf = calloc(DATA_MAP_SIZE, sizeof(unsigned char));
     do_verify = 0;
-    current_temp = 6;
+    current_temp = temp;
 
     while (dSeq < DATA_MAP_SIZE) {
         dArray = DataPtr->DataMap[dSeq].Array;
@@ -67,11 +71,11 @@ static void Init_Output_Buf()
             current_mode = output_buf[dArray];
             break;
         case 5:
-            output_buf[dArray] = DbPtr->Data[SWING_OFF];
+            output_buf[dArray] = DbPtr->Data[swing];
             current_swing = output_buf[dArray];
             break;
         case 6:
-            output_buf[dArray] = DbPtr->Data[FAN_LOW];
+            output_buf[dArray] = DbPtr->Data[fan];
             current_fan = output_buf[dArray];
             break;
         case 7:
@@ -260,8 +264,9 @@ static void IR_Generate()
     rmt_item32_t *item = (rmt_item32_t *)malloc(size);
     memset((void *)item, 0, size);
     item_num = rmt_build_items(item);
-    gpio_matrix_out(RMT_TX_EXTENDER_GPIO, RMT_TX_SIGNAL_IDX, false, false);
+    // gpio_matrix_out(RMT_TX_EXTENDER_GPIO, RMT_TX_SIGNAL_IDX, false, false);
     rmt_write_items(RMT_TX_CHANNEL, item, item_num, true);
+    led_double_blink();
     free(item);
 }
 

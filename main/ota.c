@@ -52,6 +52,7 @@ static void ota_task(void *arg)
     esp_err_t err = esp_https_ota_begin(&ota_config, &https_ota_handle);
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "esp_https_ota_begin failed, error 0x%X", err);
+        led_ota_blink_stop();
         vTaskDelete(NULL);
     }
 

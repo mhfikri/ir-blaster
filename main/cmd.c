@@ -44,7 +44,7 @@ static esp_err_t cmd_rmt(cJSON *data)
 
     if (rmt_type == RMT_TYPE_AC) {
         if (rmt_id != prev_rmt_id) {
-            err = AC_Brand_Set(rmt_id);
+            err = AC_Brand_Set(rmt_id, false);
             if (err != ESP_OK) {
                 return err;
             }
@@ -95,15 +95,13 @@ static esp_err_t cmd_rmt(cJSON *data)
         err = TV_IR_TX(rmt_code);
     }
 
-    if (err == ESP_OK) {
-        led_double_blink();
-    }
-
     return err;
 }
 
-void handle_command(char *cmd)
+void handle_command(void *arg, char *cmd)
 {
+    context_t *context = (context_t *)arg;
+
     cJSON *root = cJSON_Parse(cmd);
     int type = cJSON_GetObjectItem(root, "commandType")->valueint;
     cJSON *payload = cJSON_GetObjectItem(root, "commandPayload");
@@ -120,5 +118,15 @@ void handle_command(char *cmd)
         ota_init(url);
     } else if (type == CMD_TYPE_RMT) {
         cmd_rmt(payload);
+    } else if (type == CMD_TYPE_RMT_AUTO_ON) {
+        bool enable = cJSON_IsTrue(cJSON_GetObjectItem(payload, "enable"));
+        int rmt_id = cJSON_GetObjectItem(payload, "remoteId")->valueint;
+        float temp = (float)cJSON_GetObjectItem(payload, "temp")->valueint;
+        context_set_rmt_auto_on(context, enable, rmt_id, temp);
+    } else if (type == CMD_TYPE_RMT_AUTO_OFF) {
+        bool enable = cJSON_IsTrue(cJSON_GetObjectItem(payload, "enable"));
+        int rmt_id = cJSON_GetObjectItem(payload, "remoteId")->valueint;
+        float temp = (float)cJSON_GetObjectItem(payload, "temp")->valueint;
+        context_set_rmt_auto_off(context, enable, rmt_id, temp);
     }
 }

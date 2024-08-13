@@ -135,6 +135,7 @@ static void wifi_task(void *arg)
 
         ESP_LOGI(TAG, "Connecting to %s...", (const char *)context->config.ssid);
         ESP_ERROR_CHECK(esp_wifi_connect());
+        led_connecting_blink_start();
         while (true) {
             ESP_ERROR_CHECK(context_set_network_connected(context, false));
             xEventGroupWaitBits(wifi_event_group, CONNECTED_BIT, pdTRUE, pdTRUE, portMAX_DELAY);
@@ -146,6 +147,7 @@ static void wifi_task(void *arg)
             ESP_LOGW(TAG, "Network error, reconnecting...");
             ESP_ERROR_CHECK(esp_wifi_disconnect());
             ESP_ERROR_CHECK(esp_wifi_connect());
+            led_connecting_blink_start();
         }
     }
 }

@@ -1,6 +1,8 @@
 #ifndef IR_BLASTER_RMT_AC_H
 #define IR_BLASTER_RMT_AC_H
 
+#include <stdbool.h>
+
 #include "esp_err.h"
 
 typedef struct {
@@ -26,7 +28,7 @@ typedef enum {
     TEMP_DOWN,
 } AC_DATA_LST;
 
-esp_err_t AC_Brand_Set(unsigned short Set_Num);
+esp_err_t AC_Brand_Set(unsigned short Set_Num, bool is_auto);
 esp_err_t rmt_ac_power_on();
 esp_err_t rmt_ac_power_off();
 esp_err_t rmt_ac_temp_up();

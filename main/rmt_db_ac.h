@@ -78,6 +78,6 @@ extern AC_DB_FORM AC_DbForm[];
 extern WAVE_FORM AC_WaveForm[];
 extern DATA_FORM AC_DataForm[];
 
-extern unsigned int acdb_size;
+extern unsigned int ac_db_size;
 
 #endif // IR_BLASTER_RMT_DB_AC_H

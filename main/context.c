@@ -36,6 +36,9 @@ context_t *context_create(void)
     context->sensors.temp = CONTEXT_UNKNOWN_VALUE;
     context->sensors.humidity = CONTEXT_UNKNOWN_VALUE;
 
+    context->rmt.auto_on.enable = false;
+    context->rmt.auto_off.enable = false;
+
     return context;
 }
 
@@ -108,5 +111,29 @@ esp_err_t context_set_config(context_t *context, const char *device_id, const ch
     context_unlock(context);
 
     if (bitsToSet) xEventGroupSetBits(context->event_group, bitsToSet);
+    return ESP_OK;
+}
+
+esp_err_t context_set_rmt_auto_on(context_t *context, bool enable,
+                                  int rmt_id, float temp)
+{
+    EventBits_t bitsToSet = 0U;
+    context_lock(context);
+    context_set(context->rmt.auto_on.enable, enable, CONTEXT_EVENT_CONFIG);
+    context_set(context->rmt.auto_on.rmt_id, rmt_id, CONTEXT_EVENT_CONFIG);
+    context_set(context->rmt.auto_on.temp, temp, CONTEXT_EVENT_CONFIG);
+    context_unlock(context);
+    return ESP_OK;
+}
+
+esp_err_t context_set_rmt_auto_off(context_t *context, bool enable,
+                                   int rmt_id, float temp)
+{
+    EventBits_t bitsToSet = 0U;
+    context_lock(context);
+    context_set(context->rmt.auto_off.enable, enable, CONTEXT_EVENT_CONFIG);
+    context_set(context->rmt.auto_off.rmt_id, rmt_id, CONTEXT_EVENT_CONFIG);
+    context_set(context->rmt.auto_off.temp, temp, CONTEXT_EVENT_CONFIG);
+    context_unlock(context);
     return ESP_OK;
 }

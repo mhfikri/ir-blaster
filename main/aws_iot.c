@@ -53,6 +53,7 @@
 #include "aws_iot.h"
 #include "cmd.h"
 #include "context.h"
+#include "driver.h"
 #include "ota.h"
 
 #define MESSAGE_PAYLOAD "{\"deviceId\":\"%s\",\"temperature\":\"%.01f\",\"humidity\":\"%.01f\",\"firmwareVersion\":\"%s\"}"
@@ -82,7 +83,7 @@ void iot_subscribe_callback_handler(AWS_IoT_Client *pClient, char *topicName, ui
     ESP_LOGI(TAG, "Subscribe callback");
     ESP_LOGI(TAG, "%.*s\t%.*s", topicNameLen, topicName, (int)params->payloadLen, (char *)params->payload);
 
-    handle_command((char *)params->payload);
+    handle_command(pData, (char *)params->payload);
 }
 
 void disconnectCallbackHandler(AWS_IoT_Client *pClient, void *data)
@@ -183,7 +184,7 @@ void aws_iot_task(void *arg)
 
     ESP_LOGI(TAG, "Subscribing...");
     rc = aws_iot_mqtt_subscribe(&client, SUBSCRIBE_TOPIC, strlen(SUBSCRIBE_TOPIC),
-                                QOS0, iot_subscribe_callback_handler, NULL);
+                                QOS0, iot_subscribe_callback_handler, context);
     if (SUCCESS != rc) {
         ESP_LOGE(TAG, "Error subscribing : %d ", rc);
         abort();
@@ -198,6 +199,8 @@ void aws_iot_task(void *arg)
     paramsQOS1.qos = QOS1;
     paramsQOS1.payload = (void *)cPayload;
     paramsQOS1.isRetained = 0;
+
+    led_connecting_blink_stop();
 
     while ((NETWORK_ATTEMPTING_RECONNECT == rc || NETWORK_RECONNECTED == rc || SUCCESS == rc)) {
 

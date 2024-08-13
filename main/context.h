@@ -1,6 +1,8 @@
 #ifndef IR_BLASTER_CONTEXT_H
 #define IR_BLASTER_CONTEXT_H
 
+#include <stdbool.h>
+
 #include "freertos/FreeRTOS.h"
 #include "freertos/event_groups.h"
 #include "freertos/portmacro.h"
@@ -35,6 +37,19 @@ typedef struct {
         volatile float temp;
         volatile float humidity;
     } sensors;
+
+    struct {
+        struct {
+            bool enable;
+            int rmt_id;
+            float temp;
+        } auto_on;
+        struct {
+            bool enable;
+            int rmt_id;
+            float temp;
+        } auto_off;
+    } rmt;
 } context_t;
 
 context_t *context_create(void);
@@ -56,5 +71,11 @@ esp_err_t context_set_time_updated(context_t *context);
 esp_err_t context_set_iot_connected(context_t *context, bool connected);
 
 esp_err_t context_set_config(context_t *context, const char *device_id, const char *ssid, const char *password);
+
+esp_err_t context_set_rmt_auto_on(context_t *context, bool enable,
+                                  int rmt_id, float temp);
+
+esp_err_t context_set_rmt_auto_off(context_t *context, bool enable,
+                                   int rmt_id, float temp);
 
 #endif // IR_BLASTER_CONTEXT_H

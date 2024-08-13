@@ -3,6 +3,8 @@
 
 #include "esp_err.h"
 #include "esp_log.h"
+#include "esp_system.h"
+#include "nvs_flash.h"
 
 #include "iot_button.h"
 #include "led_indicator.h"
@@ -33,8 +35,8 @@ static const blink_step_t double_blink[] = {
 };
 
 static const blink_step_t led_provisioning[] = {
-    {LED_BLINK_HOLD, LED_STATE_ON, 500},
-    {LED_BLINK_HOLD, LED_STATE_OFF, 500},
+    {LED_BLINK_HOLD, LED_STATE_ON, 1000},
+    {LED_BLINK_HOLD, LED_STATE_OFF, 1000},
     {LED_BLINK_LOOP, 0, 0},
 };
 
@@ -44,8 +46,8 @@ static const blink_step_t led_provisioned[] = {
 };
 
 static const blink_step_t led_connecting[] = {
-    {LED_BLINK_HOLD, LED_STATE_ON, 200},
-    {LED_BLINK_HOLD, LED_STATE_OFF, 800},
+    {LED_BLINK_HOLD, LED_STATE_ON, 500},
+    {LED_BLINK_HOLD, LED_STATE_OFF, 500},
     {LED_BLINK_LOOP, 0, 0},
 };
 
@@ -72,12 +74,14 @@ static blink_step_t const *led_blink_list[] = {
 
 static void button_single_click_cb(void *arg, void *usr_data)
 {
-    ESP_LOGI(TAG, "BUTTON_SINGLE_CLICK");
+    ESP_LOGI(TAG, "button click detected");
 }
 
-static void button_long_press_start_cb(void *arg, void *usr_data)
+static void button_long_press_cb(void *arg, void *usr_data)
 {
-    ESP_LOGI(TAG, "BUTTON_LONG_PRESS_START");
+    ESP_LOGI(TAG, "button long press detected");
+    nvs_flash_erase();
+    esp_restart();
 }
 
 void led_double_blink(void)
@@ -108,6 +112,22 @@ void led_provisioning_blink_stop(void)
 {
     ESP_LOGI(TAG, "led provisioning blink stop");
     led_indicator_stop(led_handle, BLINK_PROVISIONING);
+    vTaskDelay(100 / portTICK_RATE_MS);
+    led_indicator_start(led_handle, BLINK_PROVISIONED);
+}
+
+void led_connecting_blink_start(void)
+{
+    ESP_LOGI(TAG, "led connecting blink start");
+    led_indicator_start(led_handle, BLINK_CONNECTING);
+}
+
+void led_connecting_blink_stop(void)
+{
+    ESP_LOGI(TAG, "led connecting blink stop");
+    led_indicator_stop(led_handle, BLINK_CONNECTING);
+    vTaskDelay(100 / portTICK_RATE_MS);
+    led_indicator_start(led_handle, BLINK_CONNECTED);
 }
 
 static void rmt_tx_init(void)
@@ -158,7 +178,7 @@ esp_err_t driver_init(void)
     button_config_t btn_cfg = {
         .type = BUTTON_TYPE_GPIO,
         .long_press_time = 3000,
-        .short_press_time = 0,
+        .short_press_time = 180,
         .gpio_button_config = {
             .gpio_num = BUTTON_GPIO,
             .active_level = BUTTON_ACTIVE_LEVEL,
@@ -170,7 +190,7 @@ esp_err_t driver_init(void)
         return ESP_FAIL;
     }
     ESP_ERROR_CHECK(iot_button_register_cb(btn_handle, BUTTON_SINGLE_CLICK, button_single_click_cb, NULL));
-    ESP_ERROR_CHECK(iot_button_register_cb(btn_handle, BUTTON_LONG_PRESS_START, button_long_press_start_cb, NULL));
+    ESP_ERROR_CHECK(iot_button_register_cb(btn_handle, BUTTON_LONG_PRESS_START, button_long_press_cb, NULL));
 
     rmt_tx_init();
 

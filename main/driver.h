@@ -3,12 +3,12 @@
 
 #include "esp_err.h"
 
-#define LED_INDICATOR_GPIO 19
+#define LED_INDICATOR_GPIO 22
 
 #define BUTTON_GPIO 33
 #define BUTTON_ACTIVE_LEVEL 1
 
-#define RMT_TX_GPIO 17
+#define RMT_TX_GPIO 16
 #define RMT_TX_CHANNEL 0
 #define RMT_TICK_10_US 8
 #define RMT_DATA_ITEM_NUM 256
@@ -20,6 +20,8 @@ void led_ota_blink_start(void);
 void led_ota_blink_stop(void);
 void led_provisioning_blink_start(void);
 void led_provisioning_blink_stop(void);
+void led_connecting_blink_start(void);
+void led_connecting_blink_stop(void);
 
 esp_err_t rmt_find_model(unsigned short Set_Num,
                          unsigned short *setnum_ptr,

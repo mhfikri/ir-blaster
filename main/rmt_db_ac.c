@@ -11,7 +11,7 @@ AC_DB_FORM AC_DbForm[] = {
      0,
      {0x01, 0x00, 0x01, 0x04, 0x02, 0x00, 0x01, 0x02, 0x03, 0x00, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x01, 0x00, 0xff, 0xff},
      {0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e},
-     {0x00, 0x02, 0x50, 0x02, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0xff, 0xff, 0xff, 0xff, 0xff},
+     {0x00, 0x02, 0x50, 0x02, 0x02, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff},
      0xff,
      0x00,
      SHARP67AC,
@@ -34,15 +34,15 @@ AC_DB_FORM AC_DbForm[] = {
 
 WAVE_FORM AC_WaveForm[] = {
     // SHARP67AC
-    {{70, 141},
-     {{{HIGH, 630}, {LOW, 593}},
-      {{HIGH, 630}, {LOW, 1698}},
-      {{HIGH, 8999}, {LOW, 4510}},
-      {{HIGH, 630}, {LOW, 20208}},
+    {{70, 140},
+     {{{HIGH, 665}, {LOW, 540}},
+      {{HIGH, 665}, {LOW, 1620}},
+      {{HIGH, 9000}, {LOW, 4460}},
+      {{HIGH, 665}, {LOW, 19960}},
       {{LOW, 0}, {LOW, 0}}}},
 
     // PANASONIC152AC
-    {{70, 141},
+    {{70, 140},
      {{{HIGH, 469}, {LOW, 419}},
       {{HIGH, 483}, {LOW, 1252}},
       {{HIGH, 3531}, {LOW, 1712}},
@@ -66,15 +66,15 @@ DATA_FORM AC_DataForm[] = {
       {DEFAULT3, 0, 10, 8},
       {DEFAULT4, 0, 11, 3},
       {LEADER, 3, 0, 0},
-      {DEFAULT5, 0, 12, 1},
-      {KEYPRESS, 0, 20, 3},
-      {DEFAULT6, 0, 13, 1},
-      {DEFAULT7, 0, 14, 8},
-      {DEFAULT8, 0, 15, 8},
-      {DEFAULT9, 0, 16, 4},
-      {DEFAULTA, 0, 17, 3},
+      {SWING, 0, 5, 2},
+      {DEFAULT1, 0, 8, 2},
+      {DEFAULT1, 0, 8, 8},
+      {DEFAULT5, 0, 12, 8},
+      {DEFAULT1, 0, 8, 8},
       {VERIFY1, 0, 18, 4},
       {END, 0, 0, 0},
+      {NONE, 0, 0, 0},
+      {NONE, 0, 0, 0},
       {NONE, 0, 0, 0},
       {NONE, 0, 0, 0},
       {NONE, 0, 0, 0},
@@ -120,6 +120,6 @@ DATA_FORM AC_DataForm[] = {
       {NONE, 0, 0, 0}}},
 };
 
-unsigned int acdb_size = sizeof(AC_DbForm) / sizeof(AC_DbForm[0]);
+unsigned int ac_db_size = sizeof(AC_DbForm) / sizeof(AC_DbForm[0]);
 
 #endif // IR_BLASTER_RMT_DB_AC_C
